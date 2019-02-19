@@ -52,8 +52,9 @@ def setup_logging(application_name='RadioCrawler',
     logging.config.dictConfig(logging_config)
 
     logger = logging.getLogger(application_name)
-    if 'RadioCrawlerLogLevel' in os.environ:
-        numeric_level = getattr(logging, os.environ['RadioCrawlerLogLevel'], None)
+    log_level_env = 'RadioCrawlerLogLevel'
+    if log_level_env in os.environ:
+        numeric_level = getattr(logging, os.environ[log_level_env], None)
         logger.setLevel(numeric_level)
 
     return logger

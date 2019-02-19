@@ -18,52 +18,27 @@
 #
 ####################################################################################################
 
-__all__ = ['Crawler']
-
 ####################################################################################################
 
 import argparse
 
-from RadioCrawler.Config.ConfigFile import ConfigFile
-from RadioCrawler.Database import CrawlerDatabase
-from RadioCrawler.Tools.ProgramOption import PathAction
+####################################################################################################
+
+from .Path import to_absolute_path
 
 ####################################################################################################
 
-class Crawler:
+class PathAction(argparse.Action):
 
     ##############################################
 
-    def __init__(self):
+    def __call__(self, parser, namespace, values, option_string=None):
 
-        self._parse_args()
-        self._config = ConfigFile(self._args.config)
-        self._document_database = CrawlerDatabase.open_database(self._config.Database)
-
-    ##############################################
-
-    def _parse_args(self):
-
-        parser = argparse.ArgumentParser(
-            description='A Radio Crawler',
-        )
-
-        parser.add_argument(
-            '--config',
-            action=PathAction,
-            default=None,
-            help='config file',
-        )
-
-        parser.add_argument(
-            '--version',
-            action='store_true', default=False,
-            help="show version and exit",
-        )
-
-        self._args = parser.parse_args()
-
-    ##############################################
-
-    def run(self):
-        pass
+        if values is not None:
+            if isinstance(values, list):
+                absolute_path = [to_absolute_path(x) for x in values]
+            else:
+                absolute_path = to_absolute_path(values)
+        else:
+            absolute_path = None
+        setattr(namespace, self.dest, absolute_path)

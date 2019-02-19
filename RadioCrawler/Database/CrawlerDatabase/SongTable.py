@@ -18,52 +18,36 @@
 #
 ####################################################################################################
 
-__all__ = ['Crawler']
+####################################################################################################
+
+from sqlalchemy import Column, Integer, String, DateTime
 
 ####################################################################################################
 
-import argparse
-
-from RadioCrawler.Config.ConfigFile import ConfigFile
-from RadioCrawler.Database import CrawlerDatabase
-from RadioCrawler.Tools.ProgramOption import PathAction
+from ..SqlAlchemyBase import SqlRow
 
 ####################################################################################################
 
-class Crawler:
+class SongRowMixin(SqlRow):
+
+    __tablename__ = 'songs'
+
+    # Record ID
+    id = Column(Integer, primary_key=True)
+
+    title = Column(String)
+    authors = Column(String)
+    year = Column(String)
+
+    album = Column(String)
+    label = Column(String)
+
+    cover = Column(String)
+
+    youtube = Column(String)
+    youtube_cover = Column(String)
 
     ##############################################
 
-    def __init__(self):
-
-        self._parse_args()
-        self._config = ConfigFile(self._args.config)
-        self._document_database = CrawlerDatabase.open_database(self._config.Database)
-
-    ##############################################
-
-    def _parse_args(self):
-
-        parser = argparse.ArgumentParser(
-            description='A Radio Crawler',
-        )
-
-        parser.add_argument(
-            '--config',
-            action=PathAction,
-            default=None,
-            help='config file',
-        )
-
-        parser.add_argument(
-            '--version',
-            action='store_true', default=False,
-            help="show version and exit",
-        )
-
-        self._args = parser.parse_args()
-
-    ##############################################
-
-    def run(self):
-        pass
+    def __repr__(self):
+        return '{0.title} {0.authors}'.format(self)
