@@ -140,18 +140,12 @@ class Crawler:
 
         self._parse_args()
         self._config = ConfigFile(self._args.config)
-        self._database = CrawlerDatabase.open_database(self._config.Database)
 
+        self._database = CrawlerDatabase.open_database(self._config.Database)
         self._song_table = self._database.song_table
         self._playlist_table = self._database.playlist_table
 
-        PlaylistRow= self._playlist_table.ROW_CLASS
-        last_played_song = self._playlist_table.query().order_by(PlaylistRow.id.desc()).first()
-        if last_played_song:
-            song_row = last_played_song.song
-            self._last_song = Song(**song_row.to_dict())
-            print('last song', repr(self._last_song))
-        self._last_song = None
+        self._get_last_song()
 
     ##############################################
 
@@ -175,6 +169,19 @@ class Crawler:
         )
 
         self._args = parser.parse_args()
+
+    ##############################################
+
+    def _get_last_song(self):
+
+        PlaylistRow = self._playlist_table.ROW_CLASS
+        last_played_song = self._playlist_table.query().order_by(PlaylistRow.id.desc()).first()
+        if last_played_song:
+            song_row = last_played_song.song
+            self._last_song = Song(**song_row.to_dict())
+            self._logger.info('last song {}'.format(self._last_song))
+        else:
+            self._last_song = None
 
     ##############################################
 
@@ -210,6 +217,7 @@ class Crawler:
 
         url = self._config.Crawler.url()
         r = requests.get(url)
+        r.raise_for_status()
         data = r.json()
 
         new_songs = [Song(**item) for item in data['steps'].values()]
@@ -232,29 +240,34 @@ class Crawler:
             self._playlist_table.commit()
             self._last_song = new_songs[-1]
 
-        return self._last_song.end
-
     ##############################################
 
     def run(self):
 
         while True:
             try: # catch everything
-                end = self._poll()
+                self._poll()
 
+                end = self._last_song.end
                 duration = (end - time.time()) * self._config.Crawler.poll_scale
+                duration -= 5 # for following code
                 time_delta = datetime.timedelta(seconds=duration)
 
                 now = datetime.datetime.now()
                 next_time = now + time_delta
 
-                self._logger.info('Next in {}  @ {}  for {}'.format(time_delta, next_time, end))
+                # Fixme: why ???
+                if duration > 0:
+                    logger = self._logger.info
+                else:
+                    logger = self._logger.warning
+                logger('Next in {}  @ {}  for {}'.format(time_delta, next_time, self._last_song.end_date))
 
                 if duration > 0:
                     time.sleep(duration) # s
-                else:
-                    # Fixme: why !!!
-                    time.sleep(30) # s
+                # else:
+                #     time.sleep(30) # s
+
             except Exception as exception:
                 message = '\n' + str(exception) + '\n' + traceback.format_exc()
                 self._logger.error(message)
