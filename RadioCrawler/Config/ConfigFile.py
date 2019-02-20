@@ -96,7 +96,9 @@ class Path(DefaultConfig.Path):
     def __init__(self, config_path=None):
 
         path = config_path or self.default_path()
-        self._logger.info('Load config from {}'.format(path))
+        message = 'Load config from {}'.format(path)
+        print(message)
+        self._logger.info(message)
 
         if not Path(path).exists():
             raise NameError("You must first create a configuration file using the init command")

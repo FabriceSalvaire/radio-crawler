@@ -44,8 +44,10 @@ class CrawlerDaemon:
         self._config = ConfigFile(self._args.config)
         self._set_signal()
 
+        logging_config_file = self._config.Logging.config_file()
+        print('Setup logging using', logging_config_file)
         self._logger = Logging.setup_logging(application_name='radio-crawler',
-                                             config_file=self._config.Logging.config_file())
+                                             config_file=logging_config_file)
 
         self._logger.info('Started Radio Crawler')
         self._service = CrawlerService(self._config)
