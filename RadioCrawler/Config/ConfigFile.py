@@ -20,6 +20,7 @@
 
 ####################################################################################################
 
+from pathlib import Path
 import importlib.util as importlib_util
 import logging
 
@@ -71,29 +72,34 @@ import RadioCrawler.Config.DefaultConfig as DefaultConfig
         path = config_path or self.default_path()
         self._logger.info('Load config from {}'.format(path))
 
-        try:
-            with open(path) as fh:
-                code = fh.read()
-        except FileNotFoundError:
+        if not Path(path).exists():
             raise NameError("You must first create a configuration file using the init command")
 
         # This code as issue with code in class definition ???
+        # with open(path) as fh:
+        #     code = fh.read()
         # namespace = {'__file__': path}
         # # code_object = compile(code, path, 'exec')
         # exec(code, {}, namespace)
         # for key, value in namespace.items():
         #     setattr(self, key, value)
 
-        spec = importlib_util.spec_from_file_location('Config', path)
+        # A factory function for creating a ModuleSpec instance based on the path to a file.
+        spec = importlib_util.spec_from_file_location(name='Config', location=path)
+        # Create a new module based on spec
         Config = importlib_util.module_from_spec(spec)
+        # executes the module in its own namespace when a module is imported
         spec.loader.exec_module(Config)
 
+        # Copy attributes from config or default
         for key in DefaultConfig.__all__:
-            if hasattr(Config, key):
+            customised = hasattr(Config, key)
+            if customised:
                 src = Config
             else:
                 src = DefaultConfig
             value = getattr(src, key)
             setattr(self, key, value)
-            # resolve ConfigFile_ClassName in DefaultConfig
-            setattr(DefaultConfig, 'ConfigFile_' + key, value)
+            if customised:
+                # Hack: reset ConfigFile_ClassName in DefaultConfig
+                setattr(DefaultConfig, 'ConfigFile_' + key, value)
