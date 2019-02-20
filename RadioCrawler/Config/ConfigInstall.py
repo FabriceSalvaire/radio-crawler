@@ -21,7 +21,6 @@
 ####################################################################################################
 
 from pathlib import Path
-import os
 import sys
 
 import RadioCrawler.Tools.Path as PathTools # due to Path class
@@ -74,6 +73,8 @@ class Path:
 
 class Logging:
 
+    # Fixme: should be in config but logging must be set earlier
+    
     default_config_file = 'logging.yml'
     directories = (Path.config_directory,)
 

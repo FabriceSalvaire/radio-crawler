@@ -44,6 +44,7 @@ class Database:
     def __init__(self, connection_string, echo=False):
 
         self._engine = create_engine(connection_string, echo=echo)
+        # self._session ?
         self.session = sessionmaker(bind=self._engine)()
         self._declarative_base_cls = None
 

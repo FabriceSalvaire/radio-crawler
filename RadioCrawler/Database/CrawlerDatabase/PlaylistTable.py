@@ -20,9 +20,9 @@
 
 ####################################################################################################
 
-from sqlalchemy import Column, Integer, String, DateTime
-
-####################################################################################################
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import relationship
 
 from ..SqlAlchemyBase import SqlRow
 
@@ -33,4 +33,18 @@ class PlaylistRowMixin(SqlRow):
     __tablename__ = 'playlist'
 
     # Record ID
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True) # auto-incremented
+
+    radio = Column(Integer, nullable=False) # Fixme:
+    start = Column(DateTime, nullable=False)
+    end = Column(DateTime, nullable=False)
+
+    ##############################################
+
+    @declared_attr
+    def song_id(cls):
+        return Column(Integer, ForeignKey('songs.id'))
+
+    @declared_attr
+    def song(cls):
+        return relationship('SongRow', back_populates='diffusion')

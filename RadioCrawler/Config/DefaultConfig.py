@@ -31,6 +31,7 @@ as to bind to the ConfigFile space, i.e. to the user version.
 __all__ = [
     'HOME_DIRECTORY',
 
+    'Crawler',
     'Database',
     'Path',
 ]
@@ -87,15 +88,29 @@ ConfigFile_Path = Path
 
 class Database:
 
-    DRIVER = 'sqlite'
-    HOSTNAME = None
-    USER_NAME = None
+    driver = 'sqlite'
+    hostname = None
+    user_name = None
     password = None
-    DATABASE = None
-    ECHO = False
+    database = None
+    echo = False
 
     ##############################################
 
     @classmethod
     def crawler_database(cls):
         return ConfigFile_Path.join_data_directory('crawler-database.sqlite')
+
+####################################################################################################
+
+class Crawler:
+
+    url_pattern = None
+    radio = None
+    poll_scale = 2 / 3
+
+    ##############################################
+
+    @classmethod
+    def url(cls):
+        return cls.url_pattern.format(cls)

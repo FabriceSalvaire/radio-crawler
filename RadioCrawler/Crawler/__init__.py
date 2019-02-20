@@ -23,14 +23,116 @@ __all__ = ['Crawler']
 ####################################################################################################
 
 import argparse
+import datetime
+import logging
+import time
+import traceback
+
+import requests
+
+from sqlalchemy.orm.exc import NoResultFound
 
 from RadioCrawler.Config.ConfigFile import ConfigFile
 from RadioCrawler.Database import CrawlerDatabase
+from RadioCrawler.Database.CrawlerDatabase.SongTable import SongHashMixin
 from RadioCrawler.Tools.ProgramOption import PathAction
 
 ####################################################################################################
 
+_module_logger = logging.getLogger(__name__)
+
+####################################################################################################
+
+class Song(SongHashMixin):
+
+    FIELDS = (
+        'album',
+        'authors',
+        'cover',
+        'end',
+        'label',
+        'start',
+        'title',
+        'year',
+        'youtube',
+        'youtube_cover',
+    )
+
+    ##############################################
+
+    def __init__(self, **kwargs):
+
+        self.album = kwargs.get('titreAlbum', '')
+        self.authors = kwargs.get('authors', '')
+        self.label = kwargs.get('label', '')
+        self.title = kwargs.get('title', '')
+        self.year = int(kwargs.get('anneeEditionMusique', 0))
+
+        self.cover = kwargs.get('visual', None)
+        self.youtube = kwargs.get('lienYoutube', None)
+        self.youtube_cover = kwargs.get('visuelYoutube', None)
+
+        now = time.time()
+        self.start = kwargs.get('start', now)
+        self.end = kwargs.get('end', now)
+
+        func = datetime.datetime.fromtimestamp
+        self.start_date, self.end_date = [func(x) for x in (self.start, self.end)]
+
+    ##############################################
+
+    @property
+    def id(self):
+        return '___'.join([x.lower() for x in (self.title, self.authors)]).replace(' ', '-')
+
+    @property
+    def duration(self):
+        delta = self.end - self.start
+        return datetime.timedelta(seconds=delta)
+
+    ##############################################
+
+    def __repr__(self):
+        return '| {0.start_date} | {0.end_date} | {0.duration} | {0.title} — {0.authors}'.format(self)
+
+    ##############################################
+
+    def to_dict(self):
+        return {key:getattr(self, key) for key in self.FIELDS}
+
+####################################################################################################
+
 class Crawler:
+
+    KEYS = (
+        'anneeEditionMusique',
+        'authors',
+        # 'composers',
+        # 'coverUuid',
+        # 'depth',
+        # 'discJockey',
+        # 'embedId',
+        # 'embedType',
+        'end',
+        # 'fatherStepId',
+        'label',
+        'lienYoutube',
+        # 'path',
+        # 'performers',
+        # 'releaseId',
+        # 'songId', # change ???
+        'start',
+        # 'stationId',
+        # 'stepId',
+        'title',
+        # 'titleSlug',
+        'titreAlbum',
+        # 'uuid',
+        'visual',
+        'visuelYoutube',
+    )
+
+    _logger = _module_logger.getChild('Crawler')
 
     ##############################################
 
@@ -38,7 +140,18 @@ class Crawler:
 
         self._parse_args()
         self._config = ConfigFile(self._args.config)
-        self._document_database = CrawlerDatabase.open_database(self._config.Database)
+        self._database = CrawlerDatabase.open_database(self._config.Database)
+
+        self._song_table = self._database.song_table
+        self._playlist_table = self._database.playlist_table
+
+        PlaylistRow= self._playlist_table.ROW_CLASS
+        last_played_song = self._playlist_table.query().order_by(PlaylistRow.id.desc()).first()
+        if last_played_song:
+            song_row = last_played_song.song
+            self._last_song = Song(**song_row.to_dict())
+            print('last song', repr(self._last_song))
+        self._last_song = None
 
     ##############################################
 
@@ -65,5 +178,84 @@ class Crawler:
 
     ##############################################
 
+    def _add_song(self, song):
+
+        try:
+            song_row = self._song_table.filter_by(id=hash(song)).one() # or .one_or_none()
+        except NoResultFound:
+            song_row = self._song_table.add_new_row(
+                # **song.to_dict()
+                # uuid=hash(song),
+                uuid=song.sha,
+                title=song.title,
+                authors=song.authors,
+                year=song.year,
+                album=song.album,
+                label=song.label,
+                cover=song.cover,
+                youtube=song.youtube,
+                youtube_cover=song.youtube_cover,
+            )
+
+        self._playlist_table.add_new_row(
+            radio=self._config.Crawler.radio,
+            start=song.start_date,
+            end=song.end_date,
+            song=song_row,
+        )
+
+    ##############################################
+
+    def _poll(self):
+
+        url = self._config.Crawler.url()
+        r = requests.get(url)
+        data = r.json()
+
+        new_songs = [Song(**item) for item in data['steps'].values()]
+
+        if self._last_song:
+            last_id = self._last_song.id
+            song_ids = [song.id for song in new_songs]
+            self._logger.info('\n{}\n{}'.format(last_id, song_ids))
+            try:
+                index = song_ids.index(last_id)
+                new_songs = new_songs[index+1:]
+            except ValueError:
+                pass
+
+        if new_songs:
+            for song in new_songs:
+                self._logger.info('\n{}'.format(song))
+                self._add_song(song)
+            # self._song_table.commit() # implicit
+            self._playlist_table.commit()
+            self._last_song = new_songs[-1]
+
+        return self._last_song.end
+
+    ##############################################
+
     def run(self):
-        pass
+
+        while True:
+            try: # catch everything
+                end = self._poll()
+
+                duration = (end - time.time()) * self._config.Crawler.poll_scale
+                time_delta = datetime.timedelta(seconds=duration)
+
+                now = datetime.datetime.now()
+                next_time = now + time_delta
+
+                self._logger.info('Next in {}  @ {}  for {}'.format(time_delta, next_time, end))
+
+                if duration > 0:
+                    time.sleep(duration) # s
+                else:
+                    # Fixme: why !!!
+                    time.sleep(30) # s
+            except Exception as exception:
+                message = '\n' + str(exception) + '\n' + traceback.format_exc()
+                self._logger.error(message)
+                time.sleep(60) # s

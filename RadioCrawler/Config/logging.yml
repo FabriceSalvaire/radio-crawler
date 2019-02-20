@@ -31,6 +31,13 @@ handlers:
     formatter: ansi
     stream: ext://sys.stderr
 
+  file:
+    class : logging.handlers.RotatingFileHandler
+    formatter: simple
+    filename: logconfig.log
+    maxBytes: 1024
+    backupCount: 3
+
 ####################################################################################################
 
 root:

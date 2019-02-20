@@ -31,11 +31,8 @@ _module_logger = logging.getLogger(__name__)
 ####################################################################################################
 
 def autoload_table(engine, table_name):
-
     # Fixme: purpose ?
-
     metadata = sqlalchemy.MetaData()
-
     return sqlalchemy.Table(table_name, metadata, autoload=True, autoload_with=engine)
 
 ####################################################################################################
@@ -43,6 +40,8 @@ def autoload_table(engine, table_name):
 class SqlRow:
 
     __table__ = None
+
+    # Fixme: remove useless code
 
     ##############################################
 
@@ -100,6 +99,7 @@ class SqlRow:
 
 class SqlTable:
 
+    # Fixme: __row_class__ ???
     ROW_CLASS = None
 
     _logger = _module_logger.getChild('.SqlTable')

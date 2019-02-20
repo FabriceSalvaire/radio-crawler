@@ -53,8 +53,8 @@ import RadioCrawler.Config.DefaultConfig as DefaultConfig
 
 ################################################################################
 
-class Path(DefaultConfig.Path):
-    pass
+# class Path(DefaultConfig.Path):
+#    pass
 '''
 
         path = args.config or cls.default_path()

@@ -18,34 +18,74 @@
 #
 ####################################################################################################
 
+__all__ = ['SongHashMixin', 'SongRowMixin']
+
 ####################################################################################################
+
+import hashlib
 
 from sqlalchemy import Column, Integer, String, DateTime
-
-####################################################################################################
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declared_attr
 
 from ..SqlAlchemyBase import SqlRow
 
 ####################################################################################################
 
-class SongRowMixin(SqlRow):
+class SongHashMixin:
+
+    ##############################################
+
+    @property
+    def hash_string(self):
+        return '-'.join((self.album, self.label, self.title, self.authors, str(self.year)))
+
+    ##############################################
+
+    def __hash__(self):
+        return hash(self.hash_string)
+
+    ##############################################
+
+    @property
+    def sha(self):
+        string = self.hash_string.encode('utf-8')
+        return hashlib.sha1(string).hexdigest()
+
+####################################################################################################
+
+class SongRowMixin(SqlRow, SongHashMixin):
 
     __tablename__ = 'songs'
 
     # Record ID
     id = Column(Integer, primary_key=True)
 
-    title = Column(String)
-    authors = Column(String)
-    year = Column(String)
+    uuid = Column(String, nullable=False)
 
-    album = Column(String)
-    label = Column(String)
+    title = Column(String, nullable=False)
+    authors = Column(String, nullable=False)
+    year = Column(Integer)
+
+    album = Column(String, nullable=False)
+    label = Column(String, nullable=False)
 
     cover = Column(String)
 
     youtube = Column(String)
     youtube_cover = Column(String)
+
+    ##############################################
+
+    @declared_attr
+    def diffusion(cls):
+        return relationship('PlaylistRow', back_populates='song')
+
+    ##############################################
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.id = hash(self)
 
     ##############################################
 

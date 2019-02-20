@@ -126,7 +126,7 @@ class CrawlerServerDatabase(CrawlerDatabase, ServerDatabase):
 
 def open_database(database_config):
 
-    if database_config.DRIVER == 'sqlite':
+    if database_config.driver == 'sqlite':
         return CrawlerSqliteDatabase(database_config.crawler_database())
     else:
         return CrawlerServerDatabase(database_config)
