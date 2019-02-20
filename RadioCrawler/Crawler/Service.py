@@ -31,10 +31,8 @@ import requests
 
 from sqlalchemy.orm.exc import NoResultFound
 
-from RadioCrawler.Config.ConfigFile import ConfigFile
 from RadioCrawler.Database import CrawlerDatabase
 from RadioCrawler.Database.CrawlerDatabase.SongTable import SongHashMixin
-from RadioCrawler.Tools.ProgramOption import PathAction
 
 ####################################################################################################
 
