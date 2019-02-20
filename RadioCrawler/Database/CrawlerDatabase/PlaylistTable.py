@@ -48,3 +48,14 @@ class PlaylistRowMixin(SqlRow):
     @declared_attr
     def song(cls):
         return relationship('SongRow', back_populates='diffusion')
+
+    ##############################################
+
+    def __repr__(self):
+        return '{0.radio} | {0.start} — {0.end} | {0.duration} | {0.song_id}'.format(self)
+
+    ##############################################
+
+    @property
+    def duration(self):
+        return self.end - self.start

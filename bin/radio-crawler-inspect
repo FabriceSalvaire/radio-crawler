@@ -1,0 +1,88 @@
+#! /usr/bin/env python3
+
+####################################################################################################
+#
+# RadioCrawler - A Radio Playlist Crawler
+# Copyright (C) 2019 Fabrice Salvaire
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+####################################################################################################
+
+####################################################################################################
+
+from RadioCrawler.Logging import Logging
+logger = Logging.setup_logging(application_name='radio-crawler')
+
+####################################################################################################
+
+from pathlib import Path
+import argparse
+import datetime
+import os
+
+import ansicolor
+
+from RadioCrawler.Config.ConfigFile import ConfigFile
+from RadioCrawler.Database import CrawlerDatabase
+from RadioCrawler.Tools.ProgramOption import PathAction
+
+####################################################################################################
+
+HOME_DIRECTORY = Path(os.environ['HOME'])
+
+####################################################################################################
+
+parser = argparse.ArgumentParser(
+    description='Radio Crawler Setup',
+)
+
+parser.add_argument(
+    '--config-file',
+    action=PathAction,
+    # default=HOME_DIRECTORY.joinpath('.config', 'radio-crawler', 'config.py'),
+    default=Path('/etc/radio-crawler/config.py'),
+    help='config file',
+)
+
+args = parser.parse_args()
+
+####################################################################################################
+
+config = ConfigFile(args.config_file)
+
+database = CrawlerDatabase.open_database(config.Database)
+song_table = database.song_table
+playlist_table = database.playlist_table
+
+previous_row = None
+for playlist_row in playlist_table.filter_by(radio=7):
+    playlist_str = playlist_row
+    flag = ''
+    if playlist_row.duration < datetime.timedelta(seconds=10):
+        flag += '<<< short'
+    if previous_row:
+        delta = playlist_row.start - previous_row.end
+        if previous_row.end <= playlist_row.start:
+            if delta > datetime.timedelta(seconds=5):
+                flag += ansicolor.red('<<< gap of {}'.format(delta))
+        else:
+            number_of_seconds = -int(delta.total_seconds())
+            if number_of_seconds < 30:
+                flag += ansicolor.blue('<<< overlap of {} s'.format(number_of_seconds))
+            else:
+                delta = datetime.timedelta(seconds=number_of_seconds)
+                flag += ansicolor.red('<<< overlap of {}'.format(delta))
+    print('{} | {:40} | {}'.format(playlist_str, playlist_row.song.title[:40], flag))
+    previous_row = playlist_row
