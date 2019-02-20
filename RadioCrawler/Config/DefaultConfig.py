@@ -29,60 +29,45 @@ as to bind to the ConfigFile space, i.e. to the user version.
 ####################################################################################################
 
 __all__ = [
-    'HOME_DIRECTORY',
-
     'Crawler',
     'Database',
+    'Logging',
     'Path',
 ]
 
 ####################################################################################################
 
-import os
-import pathlib
-
-####################################################################################################
-
-HOME_DIRECTORY = pathlib.Path(os.environ['HOME'])
-
-####################################################################################################
-
 class Path:
 
-    # Fixme: Linux
-
-    CONFIG_DIRECTORY = HOME_DIRECTORY.joinpath('.config', 'radio-crawler')
-
-    # data_directory = ('.local', 'share', 'data', 'radio-crawler')
-    DATA_DIRECTORY = HOME_DIRECTORY.joinpath('.local', 'radio-crawler')
+    config_directory = None
+    data_directory = None
 
     ##############################################
 
     @classmethod
     def join_config_directory(cls, *args):
-        return cls.CONFIG_DIRECTORY.joinpath(*args)
+        return cls.config_directory.joinpath(*args)
 
     ##############################################
 
     @classmethod
     def join_data_directory(cls, *args):
-        return cls.DATA_DIRECTORY.joinpath(*args)
+        return cls.data_directory.joinpath(*args)
+
+####################################################################################################
+
+# hack to reset Path
+ConfigFile_Path = Path
+
+####################################################################################################
+
+class Logging:
 
     ##############################################
 
     @classmethod
-    def make_user_directory(cls):
-
-        for directory in (
-                cls.CONFIG_DIRECTORY,
-                cls.DATA_DIRECTORY,
-        ):
-            if not directory.exists():
-                os.mkdir(directory)
-
-####################################################################################################
-
-ConfigFile_Path = Path
+    def config_file(cls_file):
+        return ConfigFile_Path.join_config_directory('logging.yml')
 
 ####################################################################################################
 
@@ -99,6 +84,7 @@ class Database:
 
     @classmethod
     def crawler_database(cls):
+        # # $HOME/.local/radio-crawler/crawler-database.sqlite
         return ConfigFile_Path.join_data_directory('crawler-database.sqlite')
 
 ####################################################################################################

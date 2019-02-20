@@ -23,7 +23,10 @@
 from pathlib import Path
 import importlib.util as importlib_util
 import logging
+import os
+import shutil
 
+import RadioCrawler.Config.ConfigInstall as ConfigInstall
 from . import DefaultConfig
 
 ####################################################################################################
@@ -32,11 +35,11 @@ class ConfigFile:
 
     _logger = logging.getLogger(__name__)
 
-    ##############################################
-
     @classmethod
     def default_path(cls):
-        return str(DefaultConfig.Path.join_config_directory('config.py'))
+        # cf. radio-crawler-setup
+        HOME_DIRECTORY = Path(os.environ['HOME'])
+        return HOME_DIRECTORY.joinpath('.config', 'radio-crawler', 'config.py')
 
     ##############################################
 
@@ -50,20 +53,43 @@ class ConfigFile:
 #
 ################################################################################
 
+from pathlib import Path
+
 import RadioCrawler.Config.DefaultConfig as DefaultConfig
 
 ################################################################################
 
-# class Path(DefaultConfig.Path):
-#    pass
+class Path(DefaultConfig.Path):
+    config_directory = Path('{0.config_directory}')
+    data_directory = Path('{0.data_directory}')
 '''
 
-        path = args.config or cls.default_path()
-        cls._logger.info('Create config file {}'.format(path))
-        content = template.format(args).lstrip()
-        DefaultConfig.Path.make_user_directory()
-        with open(path, 'w') as fh:
-            fh.write(content)
+        path = args.config_directory.joinpath('config.py')
+        if not path.exists():
+            cls._logger.info('Create config file {}'.format(path))
+            content = template.format(args).lstrip()
+            cls.make_user_directory(args)
+            with open(path, 'w') as fh:
+                fh.write(content)
+        else:
+            cls._logger.error('config file {} exists'.format(path))
+
+    ##############################################
+
+    @classmethod
+    def make_user_directory(cls, args):
+
+        for directory in (
+                args.config_directory,
+                args.data_directory,
+        ):
+            if not directory.exists():
+                os.mkdir(directory)
+
+        config_file = ConfigInstall.Logging.default_config_file()
+        dst_path = args.config_directory.joinpath(config_file.name)
+        if not dst_path.exists():
+            shutil.copyfile(config_file, dst_path)
 
     ##############################################
 

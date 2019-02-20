@@ -29,14 +29,14 @@ import os
 import yaml
 
 import RadioCrawler.Config.ConfigInstall as ConfigInstall
+default_config_file = ConfigInstall.Logging.default_config_file()
 
 ####################################################################################################
 
 def setup_logging(application_name='RadioCrawler',
-                  config_file=ConfigInstall.Logging.default_config_file):
+                  config_file=default_config_file):
 
-    logging_config_file_name = ConfigInstall.Logging.find(config_file)
-    logging_config = yaml.load(open(logging_config_file_name, 'r'))
+    logging_config = yaml.load(open(str(config_file), 'r'))
 
     if ConfigInstall.OS.on_linux:
         # Fixme: \033 is not interpreted in YAML

@@ -20,7 +20,7 @@
 
 ####################################################################################################
 
-from pathlib import Path
+import pathlib
 import sys
 
 import RadioCrawler.Tools.Path as PathTools # due to Path class
@@ -62,24 +62,30 @@ OS = OsFactory()
 
 ####################################################################################################
 
-_this_file = Path(__file__).resolve()
+_this_file = pathlib.Path(__file__).resolve()
 
 class Path:
 
-    radio_crawler_module_directory = _this_file.parents[1]
+    module_directory = _this_file.parents[1]
     config_directory = _this_file.parent
 
 ####################################################################################################
 
 class Logging:
 
-    # Fixme: should be in config but logging must be set earlier
-    
-    default_config_file = 'logging.yml'
+    # Used as default when the configuration is not yet available
+
+    default_config_file_name = 'logging.yml'
     directories = (Path.config_directory,)
 
     ##############################################
 
     @classmethod
     def find(cls, config_file):
-        return PathTools.find(config_file, cls.directories)
+        return pathlib.Path(PathTools.find(config_file, cls.directories))
+
+    ##############################################
+
+    @classmethod
+    def default_config_file(cls):
+        return cls.find(cls.default_config_file_name)

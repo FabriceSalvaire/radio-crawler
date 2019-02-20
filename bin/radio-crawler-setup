@@ -29,9 +29,52 @@ logger.info('Setup Radio Crawler')
 
 ####################################################################################################
 
-class Args:
-    config = None # for args.config
+from pathlib import Path
+import argparse
+import os
 
 from RadioCrawler.Config.ConfigFile import ConfigFile
-ConfigFile.create(Args)
-# /home/fabrice/.config/radio-crawler/config.py
+from RadioCrawler.Tools.ProgramOption import PathAction
+import RadioCrawler
+
+####################################################################################################
+
+HOME_DIRECTORY = Path(os.environ['HOME'])
+
+####################################################################################################
+
+parser = argparse.ArgumentParser(
+    description='Radio Crawler Setup',
+)
+
+parser.add_argument(
+    '--config-directory',
+    action=PathAction,
+    # $HOME/.config/radio-crawler
+    default=HOME_DIRECTORY.joinpath('.config', 'radio-crawler'),
+    help='config file',
+)
+
+parser.add_argument(
+    '--data-directory',
+    action=PathAction,
+    # $HOME/.config/radio-crawler/config.py
+    # ('.local', 'share', 'data', 'radio-crawler')
+    default=HOME_DIRECTORY.joinpath('.local', 'radio-crawler'),
+    help='config file',
+)
+
+parser.add_argument(
+    '--version',
+    action='store_true', default=False,
+    help="show version and exit",
+)
+
+args = parser.parse_args()
+
+####################################################################################################
+
+if args.version:
+    print('\nVersion', RadioCrawler.__version__)
+else:
+    ConfigFile.create(args)

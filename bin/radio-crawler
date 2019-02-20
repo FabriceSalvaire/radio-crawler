@@ -20,19 +20,5 @@
 #
 ####################################################################################################
 
-####################################################################################################
-
-from RadioCrawler.Logging import Logging
-logger = Logging.setup_logging(application_name='radio-crawler')
-
-logger.info('Started Radio Crawler')
-
-####################################################################################################
-
-from RadioCrawler.Crawler import Crawler
-
-####################################################################################################
-
-crawler = Crawler()
-# /home/fabrice/.local/radio-crawler/crawler-database.sqlite
-crawler.run()
+from RadioCrawler.Crawler import CrawlerDaemon
+CrawlerDaemon()
