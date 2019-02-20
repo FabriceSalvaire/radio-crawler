@@ -2,17 +2,14 @@
 __pycache__
 doc/sphinx/build/
 
-.gitattributes
-.github/
-TOFIX.txt
+RadioCrawler.egg-info/
+build/
+dist/
+
 doc/
 gh-pages/
-json-example.py
-notes.txt
 open-doc.sh
-RadioCrawler/Crawler/tmp.py
-TODO.txt
-logconfig.log
 tools/upload-to-pypi
 tools/upload-www
+
 trash/
