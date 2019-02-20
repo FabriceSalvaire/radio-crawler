@@ -32,11 +32,15 @@ handlers:
     stream: ext://sys.stderr
 
   file:
-    class : logging.handlers.RotatingFileHandler
+    class: logging.handlers.RotatingFileHandler
     formatter: simple
     filename: logconfig.log
     maxBytes: 1024
     backupCount: 3
+
+  syslog:
+    class: logging.handlers.SysLogHandler
+    address: '/dev/log'
 
 ####################################################################################################
 
