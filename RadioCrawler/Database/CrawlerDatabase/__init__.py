@@ -51,8 +51,14 @@ class CrawlerDatabase(SqliteDatabase):
 
         declarative_base_cls = declarative_base()
 
+        from .LogTable import LogRowMixin
         from .PlaylistTable import PlaylistRowMixin
         from .SongTable import SongRowMixin
+
+        log_row_cls = type('LogRow', (LogRowMixin, declarative_base_cls), {})
+        log_table_cls = type('LogTable', (SqlTable,), {
+            'ROW_CLASS': log_row_cls,
+        })
 
         song_row_cls = type('SongRow', (SongRowMixin, declarative_base_cls), {})
         song_table_cls = type('SongTable', (SqlTable,), {
@@ -65,11 +71,13 @@ class CrawlerDatabase(SqliteDatabase):
         })
 
         row_classes = dict(
+            log=log_row_cls,
             playlist=playlist_row_cls,
             song=song_row_cls,
         )
 
         table_classes = dict(
+            log=log_table_cls,
             playlist=playlist_table_cls,
             song=song_table_cls,
         )

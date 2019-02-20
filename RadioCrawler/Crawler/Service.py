@@ -138,14 +138,24 @@ class CrawlerService:
         self._config = config
 
         self._database = CrawlerDatabase.open_database(self._config.Database)
+        self._log_table = self._database.log_table
         self._song_table = self._database.song_table
         self._playlist_table = self._database.playlist_table
+
+        self._log_row = self._log_table.add_new_row()
+        self._log_table.commit()
 
         self._get_last_song()
 
         self._running = False
         self._must_exit = False
         self._sleeping = False
+
+    ##############################################
+
+    def __del__(self):
+        self._log_row.set_stop()
+        self._log_table.commit()
 
     ##############################################
 
