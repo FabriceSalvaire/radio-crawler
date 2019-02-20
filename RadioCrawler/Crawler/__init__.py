@@ -25,6 +25,8 @@ __all__ = ['Crawler']
 import argparse
 import datetime
 import logging
+import signal
+import sys
 import time
 import traceback
 
@@ -140,12 +142,17 @@ class Crawler:
 
         self._parse_args()
         self._config = ConfigFile(self._args.config)
+        self._set_signal()
 
         self._database = CrawlerDatabase.open_database(self._config.Database)
         self._song_table = self._database.song_table
         self._playlist_table = self._database.playlist_table
 
         self._get_last_song()
+
+        self._running = False
+        self._must_exit = False
+        self._sleeping = False
 
     ##############################################
 
@@ -169,6 +176,26 @@ class Crawler:
         )
 
         self._args = parser.parse_args()
+
+    ##############################################
+
+    def _set_signal(self):
+
+        signal.signal(signal.SIGUSR1, self._on_kill)
+        try:
+            signal.signal(signal.SIGSTOP, self._on_kill)
+        except OSError:
+            pass
+
+    ##############################################
+
+    def _on_kill(self, signum, frame):
+        self._logger.info('Received signal {} sleeping {}'.format(signum, self._sleeping))
+        if self._sleeping:
+            sys.exit()
+        else:
+            self._running = False
+            self._must_exit = True
 
     ##############################################
 
@@ -244,8 +271,10 @@ class Crawler:
 
     def run(self):
 
-        while True:
+        self._running = True
+        while self._running:
             try: # catch everything
+                self._sleeping = False
                 self._poll()
 
                 end = self._last_song.end
@@ -256,19 +285,28 @@ class Crawler:
                 now = datetime.datetime.now()
                 next_time = now + time_delta
 
-                # Fixme: why ???
+                # last song | 2019-02-20 13:09:08.795817 | 2019-02-20 13:09:08.795817 | 0:00:00 |
+                # Next in -1 day, 23:59:54.953315  @ 2019-02-20 13:09:03.819188  for 2019-02-20 13:09:08.795817
                 if duration > 0:
                     logger = self._logger.info
                 else:
                     logger = self._logger.warning
                 logger('Next in {}  @ {}  for {}'.format(time_delta, next_time, self._last_song.end_date))
 
+                if self._must_exit:
+                    break
+                self._sleeping = True
                 if duration > 0:
                     time.sleep(duration) # s
-                # else:
-                #     time.sleep(30) # s
+                else:
+                    time.sleep(30) # s
 
             except Exception as exception:
                 message = '\n' + str(exception) + '\n' + traceback.format_exc()
                 self._logger.error(message)
+                if self._must_exit:
+                    break
+                self._sleeping = True
                 time.sleep(60) # s
+
+        self._logger.info('Exit')
